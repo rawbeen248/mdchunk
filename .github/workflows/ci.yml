@@ -14,14 +14,14 @@ jobs:
       fail-fast: false
       matrix:
         # Minimum supported version (pyproject.toml requires-python) plus
-        # current stable versions, per PROJECT_GUIDE.md's CI/CD guidance.
-        python-version: ["3.9", "3.11", "3.12", "3.13"]
+        # current stable versions.
+        python-version: ["3.10", "3.11", "3.12", "3.13"]
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: "pip"
@@ -33,10 +33,8 @@ jobs:
         run: ruff check .
 
       - name: Type check (mypy)
-        # mypy's own config currently targets 3.10+ typing features; run it
-        # once against the repo's configured interpreter rather than in
-        # every matrix leg, so a 3.9 leg doesn't fail on an unrelated mypy
-        # version-support message.
+        # Run once rather than in every matrix leg -- mypy's result doesn't
+        # depend on which interpreter is running it.
         if: matrix.python-version == '3.12'
         run: mypy src
 
@@ -48,8 +46,8 @@ jobs:
     runs-on: ubuntu-latest
     needs: test
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
         with:
           python-version: "3.12"
       - name: Install build tool

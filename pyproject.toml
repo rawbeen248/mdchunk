@@ -7,7 +7,7 @@ name = "mdchunk"
 version = "0.1.0"
 description = "Lightweight, structure-aware Markdown chunking for RAG systems."
 readme = "README.md"
-requires-python = ">=3.9"
+requires-python = ">=3.10"
 license = { text = "MIT" }
 authors = [
     { name = "Rabindra Adhikari" }
@@ -38,23 +38,15 @@ testpaths = ["tests"]
 
 [tool.ruff]
 line-length = 100
-target-version = "py39"
+target-version = "py310"
 
 [tool.ruff.lint]
 # E/F: pycodestyle errors + pyflakes (real correctness issues).
 # I: import sorting.
 # B: flake8-bugbear (catches real bugs, e.g. mutable default arguments).
 # RUF: ruff-specific checks.
-# Deliberately NOT selecting "UP" (pyupgrade): its main suggestions here
-# (Optional[X] -> X | None, List[X] -> list[X]) are only safe project-wide
-# if every module defers annotation evaluation via
-# `from __future__ import annotations` -- currently true for chunker.py but
-# not models.py/metrics.py. Applying them as-is would silently break the
-# declared `requires-python = ">=3.9"` support. Revisit once the project
-# either drops 3.9 or adopts `from __future__ import annotations`
-# everywhere.
 select = ["E", "F", "I", "B", "RUF"]
 
 [tool.mypy]
-python_version = "3.9"
+python_version = "3.10"
 strict = true

@@ -596,7 +596,7 @@ class MarkdownChunker:
         # actual content came from each block kind. Headings are excluded
         # entirely: a short title should never affect classification.
         sizes: Dict[str, int] = {}
-        for part, block in zip(draft.parts, draft.blocks):
+        for part, block in zip(draft.parts, draft.blocks, strict=True):
             if block.kind == "heading":
                 continue
             sizes[block.kind] = sizes.get(block.kind, 0) + self.metric.measure(part)
