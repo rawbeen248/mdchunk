@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 import re
+from collections.abc import Iterable, Sequence
 from dataclasses import dataclass, field
 from functools import lru_cache
-from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 from markdown_it import MarkdownIt
 from markdown_it.token import Token
@@ -24,7 +24,7 @@ _ATOMIC_KINDS = (CHUNK_TABLE, CHUNK_CODE, CHUNK_LIST, CHUNK_BLOCKQUOTE, CHUNK_HT
 
 
 @lru_cache(maxsize=8)
-def _compile_sentence_pattern(abbreviations: Tuple[str, ...]) -> "re.Pattern[str]":
+def _compile_sentence_pattern(abbreviations: tuple[str, ...]) -> re.Pattern[str]:
     """Compile the sentence-boundary regex once per distinct abbreviation
     set (in practice just once, since the default set never changes) and
     cache it. Cached via `lru_cache` rather than a hand-rolled dynamic class
@@ -78,18 +78,18 @@ class ChunkerConfig:
 class _Block:
     kind: str
     text: str
-    heading_path: Tuple[str, ...]
-    start_line: Optional[int]
-    end_line: Optional[int]
-    start_offset: Optional[int]
-    end_offset: Optional[int]
+    heading_path: tuple[str, ...]
+    start_line: int | None
+    end_line: int | None
+    start_offset: int | None
+    end_offset: int | None
     splittable: bool = True
 
 
 @dataclass(slots=True)
 class _Draft:
-    parts: List[str] = field(default_factory=list)
-    blocks: List[_Block] = field(default_factory=list)
+    parts: list[str] = field(default_factory=list)
+    blocks: list[_Block] = field(default_factory=list)
 
     @property
     def text(self) -> str:
@@ -105,9 +105,9 @@ class MarkdownChunker:
 
     def __init__(
         self,
-        config: Optional[ChunkerConfig] = None,
+        config: ChunkerConfig | None = None,
         *,
-        size_metric: Optional[SizeMetric] = None,
+        size_metric: SizeMetric | None = None,
     ) -> None:
         self.config = config or ChunkerConfig()
         self.metric = size_metric or CharacterSizeMetric()
@@ -116,7 +116,7 @@ class MarkdownChunker:
         # no extra dependency is needed to support them.
         self._parser = MarkdownIt("commonmark", {"html": True}).enable("table")
 
-    def chunk(self, markdown: str) -> List[Chunk]:
+    def chunk(self, markdown: str) -> list[Chunk]:
         """Chunk a Markdown document into RAG-ready :class:`Chunk` objects."""
         if not isinstance(markdown, str):
             raise TypeError("markdown must be a string")
@@ -135,7 +135,7 @@ class MarkdownChunker:
         return text.replace("\r\n", "\n").replace("\r", "\n")
 
     @staticmethod
-    def _line_offsets(source: str) -> List[int]:
+    def _line_offsets(source: str) -> list[int]:
         """Character offset of the start of each line, computed once per
         document. `_offset`/`_end_offset` then look this up in O(1) instead
         of each re-running `splitlines()` over the whole source and summing
@@ -148,9 +148,9 @@ class MarkdownChunker:
 
     def _tokens_to_blocks(
         self, tokens: Sequence[Token], line_offsets: Sequence[int]
-    ) -> List[_Block]:
-        blocks: List[_Block] = []
-        heading_stack: List[str] = []
+    ) -> list[_Block]:
+        blocks: list[_Block] = []
+        heading_stack: list[str] = []
 
         i = 0
         while i < len(tokens):
@@ -199,9 +199,9 @@ class MarkdownChunker:
         self,
         tokens: Sequence[Token],
         index: int,
-        path: Tuple[str, ...],
+        path: tuple[str, ...],
         line_offsets: Sequence[int],
-    ) -> Tuple[Optional[_Block], int]:
+    ) -> tuple[_Block | None, int]:
         token = tokens[index]
 
         if token.type in {"fence", "code_block"}:
@@ -251,7 +251,7 @@ class MarkdownChunker:
         return None, 1
 
     def _make_block(
-        self, kind: str, text: str, path: Tuple[str, ...],
+        self, kind: str, text: str, path: tuple[str, ...],
         token: Token, line_offsets: Sequence[int], splittable: bool
     ) -> _Block:
         return _Block(
@@ -265,8 +265,8 @@ class MarkdownChunker:
             splittable=splittable,
         )
 
-    def _chunk_blocks(self, blocks: Sequence[_Block]) -> List[_Draft]:
-        drafts: List[_Draft] = []
+    def _chunk_blocks(self, blocks: Sequence[_Block]) -> list[_Draft]:
+        drafts: list[_Draft] = []
         current = _Draft()
 
         def flush() -> None:
@@ -324,8 +324,8 @@ class MarkdownChunker:
         if not sentences:
             return [text.strip()]
 
-        pieces: List[str] = []
-        current: List[str] = []
+        pieces: list[str] = []
+        current: list[str] = []
 
         for sentence in sentences:
             candidate = " ".join([*current, sentence]).strip()
@@ -349,13 +349,13 @@ class MarkdownChunker:
             return self._split_list(block.text)
         return self._hard_split(block.text)
 
-    def _split_table(self, text: str) -> List[str]:
+    def _split_table(self, text: str) -> list[str]:
         rows = [line for line in text.splitlines() if line.strip()]
         if len(rows) <= 2:
             return self._hard_split(text)
 
         header = rows[:2]
-        chunks: List[str] = []
+        chunks: list[str] = []
         current = list(header)
 
         for row in rows[2:]:
@@ -369,7 +369,7 @@ class MarkdownChunker:
             chunks.append("\n".join(current))
         return chunks or [text]
 
-    def _split_list(self, text: str) -> List[str]:
+    def _split_list(self, text: str) -> list[str]:
         # Rendered list text (see _render_list_items) always starts each
         # top-level item at column 0, with any nested content indented
         # beneath it. That makes a fresh, unindented line a reliable item
@@ -377,8 +377,8 @@ class MarkdownChunker:
         # grouped up to max_size as atomic units instead of being cut
         # mid-item by a character-level split.
         lines = text.splitlines()
-        items: List[str] = []
-        current_item: List[str] = []
+        items: list[str] = []
+        current_item: list[str] = []
         for line in lines:
             if line[:1] not in ("", " ") and current_item:
                 items.append("\n".join(current_item))
@@ -391,8 +391,8 @@ class MarkdownChunker:
         if len(items) <= 1:
             return self._hard_split(text)
 
-        pieces: List[str] = []
-        current: List[str] = []
+        pieces: list[str] = []
+        current: list[str] = []
         for item in items:
             candidate = "\n".join([*current, item])
             if current and self.metric.measure(candidate) > self.config.max_size:
@@ -405,7 +405,7 @@ class MarkdownChunker:
 
         # A single item that alone exceeds max_size still needs a last-resort
         # character split, but only for that one oversized item.
-        final: List[str] = []
+        final: list[str] = []
         for piece in pieces:
             if self.metric.measure(piece) <= self.config.max_size:
                 final.append(piece)
@@ -413,7 +413,7 @@ class MarkdownChunker:
                 final.extend(self._hard_split(piece))
         return final or [text]
 
-    def _hard_split(self, text: str) -> List[str]:
+    def _hard_split(self, text: str) -> list[str]:
         max_size = self.config.max_size
         if self.metric.measure(text) <= max_size:
             return [text.strip()]
@@ -422,7 +422,8 @@ class MarkdownChunker:
             # Generic metrics cannot safely map a metric budget to character
             # offsets; fall back to whitespace chunks.
             words = text.split()
-            pieces, current = [], []  # type: List[str], List[str]
+            pieces: list[str] = []
+            current: list[str] = []
             for word in words:
                 candidate = " ".join([*current, word])
                 if current and self.metric.measure(candidate) > max_size:
@@ -457,16 +458,16 @@ class MarkdownChunker:
     # single lookbehind whose alternatives have different lengths (e.g. "Mr"
     # vs. "Prof"), so these are compiled as separate chained lookbehinds
     # instead of one alternation.
-    _ABBREVIATIONS: Tuple[str, ...] = (
+    _ABBREVIATIONS: tuple[str, ...] = (
         "Mr.", "Mrs.", "Ms.", "Dr.", "Prof.", "Sr.", "Jr.", "St.",
         "vs.", "e.g.", "i.e.", "etc.", "approx.", "no.", "No.",
         "a.m.", "p.m.", "cf.", "al.",
     )
 
-    def _sentence_pattern(self) -> "re.Pattern[str]":
+    def _sentence_pattern(self) -> re.Pattern[str]:
         return _compile_sentence_pattern(self._ABBREVIATIONS)
 
-    def _sentences(self, text: str) -> List[str]:
+    def _sentences(self, text: str) -> list[str]:
         # Conservative English sentence splitting. It avoids splitting common
         # abbreviations and initials in ordinary prose. Decimal numbers (e.g.
         # "3.14") are unaffected because there is never whitespace between
@@ -474,9 +475,9 @@ class MarkdownChunker:
         pattern = self._sentence_pattern()
         return [x.strip() for x in pattern.split(text) if x.strip()]
 
-    def _finalize(self, drafts: Sequence[_Draft]) -> List[Chunk]:
-        result: List[Chunk] = []
-        prefixes: List[str] = []
+    def _finalize(self, drafts: Sequence[_Draft]) -> list[Chunk]:
+        result: list[Chunk] = []
+        prefixes: list[str] = []
         for draft in drafts:
             text = draft.text
             if not text:
@@ -520,11 +521,11 @@ class MarkdownChunker:
 
         return self._apply_overlap(result, prefixes)
 
-    def _apply_overlap(self, chunks: List[Chunk], prefixes: List[str]) -> List[Chunk]:
+    def _apply_overlap(self, chunks: list[Chunk], prefixes: list[str]) -> list[Chunk]:
         if self.config.overlap <= 0 or len(chunks) < 2:
             return chunks
 
-        result: List[Chunk] = [chunks[0]]
+        result: list[Chunk] = [chunks[0]]
         for i in range(1, len(chunks)):
             previous, current = chunks[i - 1], chunks[i]
             if previous.metadata.heading_path != current.metadata.heading_path:
@@ -573,7 +574,7 @@ class MarkdownChunker:
         sentences = self._sentences(text)
         if not sentences:
             return ""
-        selected: List[str] = []
+        selected: list[str] = []
         total = 0
         for sentence in reversed(sentences):
             selected.insert(0, sentence)
@@ -583,19 +584,19 @@ class MarkdownChunker:
         return " ".join(selected).strip()
 
     @staticmethod
-    def _merge_paths(blocks: Sequence[_Block]) -> List[Tuple[str, ...]]:
-        paths: List[Tuple[str, ...]] = []
+    def _merge_paths(blocks: Sequence[_Block]) -> list[tuple[str, ...]]:
+        paths: list[tuple[str, ...]] = []
         for block in blocks:
             if block.heading_path and (not paths or paths[-1] != block.heading_path):
                 paths.append(block.heading_path)
         return paths
 
-    def _chunk_type(self, draft: "_Draft") -> str:
+    def _chunk_type(self, draft: _Draft) -> str:
         # `parts` and `blocks` are always parallel (one block per piece of
         # text that was appended), so this measures how much of the chunk's
         # actual content came from each block kind. Headings are excluded
         # entirely: a short title should never affect classification.
-        sizes: Dict[str, int] = {}
+        sizes: dict[str, int] = {}
         for part, block in zip(draft.parts, draft.blocks, strict=True):
             if block.kind == "heading":
                 continue
@@ -618,7 +619,7 @@ class MarkdownChunker:
         return CHUNK_TEXT
 
     @staticmethod
-    def _inline_text(token: Optional[Token]) -> str:
+    def _inline_text(token: Token | None) -> str:
         if token is None:
             return ""
         return token.content or token.markup or ""
@@ -629,7 +630,7 @@ class MarkdownChunker:
         one more '> '). A blockquote can legally contain any other block
         type (paragraphs, code, lists, tables, HTML, nested blockquotes), so
         every block type is handled here rather than just plain paragraphs."""
-        lines: List[str] = []
+        lines: list[str] = []
         i, n = 1, len(tokens) - 1
         while i < n:
             tok = tokens[i]
@@ -657,7 +658,7 @@ class MarkdownChunker:
                 i += 1
         return "\n".join(f"> {line}" if line else ">" for line in lines)
 
-    def _render_list_items(self, tokens: Sequence[Token]) -> List[str]:
+    def _render_list_items(self, tokens: Sequence[Token]) -> list[str]:
         """Reconstruct a bullet_list_open/ordered_list_open .. _close token
         span into a list of top-level item strings (marker + text, with any
         nested sub-list indented two spaces beneath it). Returning one string
@@ -665,10 +666,10 @@ class MarkdownChunker:
         oversized lists later be split at item boundaries."""
         open_token = tokens[0]
         ordered = open_token.type == "ordered_list_open"
-        number: Optional[int] = int((open_token.attrs or {}).get("start", 1)) if ordered else None
+        number: int | None = int((open_token.attrs or {}).get("start", 1)) if ordered else None
         marker_char = open_token.markup or ("-" if not ordered else ".")
 
-        items: List[str] = []
+        items: list[str] = []
         i, n = 1, len(tokens) - 1
         while i < n:
             tok = tokens[i]
@@ -700,8 +701,8 @@ class MarkdownChunker:
         simplification already made for multi-paragraph continuation
         content and is rare enough in practice not to warrant a full
         document-order-preserving rewrite here."""
-        segments: List[str] = []
-        sub_lines: List[str] = []
+        segments: list[str] = []
+        sub_lines: list[str] = []
         i, n = 1, len(tokens) - 1
         while i < n:
             tok = tokens[i]
@@ -738,7 +739,7 @@ class MarkdownChunker:
 
         if not segments:
             first_line = marker
-            continuation_lines: List[str] = []
+            continuation_lines: list[str] = []
         else:
             first_segment_lines = segments[0].splitlines() or [""]
             first_line = f"{marker} {first_segment_lines[0]}".rstrip()
@@ -772,9 +773,9 @@ class MarkdownChunker:
         # carried on the header cells' `style` attribute (e.g.
         # "text-align:right") and is preserved in the rebuilt separator row
         # rather than being flattened to a plain "---" for every column.
-        rows: List[str] = []
-        alignments: List[str] = []
-        current: List[str] = []
+        rows: list[str] = []
+        alignments: list[str] = []
+        current: list[str] = []
         header_done = False
 
         for token in tokens:
@@ -830,22 +831,22 @@ class MarkdownChunker:
         return "bullet_list_close" if list_open_type == "bullet_list_open" else "ordered_list_close"
 
     @staticmethod
-    def _line(token: Token) -> Optional[int]:
+    def _line(token: Token) -> int | None:
         return token.map[0] + 1 if token.map else None
 
     @staticmethod
-    def _end_line(token: Token) -> Optional[int]:
+    def _end_line(token: Token) -> int | None:
         return token.map[1] if token.map else None
 
     @staticmethod
-    def _offset(token: Token, line_offsets: Sequence[int]) -> Optional[int]:
+    def _offset(token: Token, line_offsets: Sequence[int]) -> int | None:
         if not token.map:
             return None
         idx = token.map[0]
         return line_offsets[idx] if idx < len(line_offsets) else line_offsets[-1]
 
     @staticmethod
-    def _end_offset(token: Token, line_offsets: Sequence[int]) -> Optional[int]:
+    def _end_offset(token: Token, line_offsets: Sequence[int]) -> int | None:
         if not token.map:
             return None
         idx = token.map[1]
@@ -855,8 +856,8 @@ class MarkdownChunker:
 def chunk_markdown(
     markdown: str,
     *,
-    config: Optional[ChunkerConfig] = None,
-    size_metric: Optional[SizeMetric] = None,
-) -> List[Chunk]:
+    config: ChunkerConfig | None = None,
+    size_metric: SizeMetric | None = None,
+) -> list[Chunk]:
     """Convenience API for chunking Markdown."""
     return MarkdownChunker(config=config, size_metric=size_metric).chunk(markdown)
