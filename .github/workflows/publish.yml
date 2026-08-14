@@ -1,0 +1,49 @@
+name: Publish to PyPI
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:  # lets you re-run this manually from the Actions tab,
+                       # e.g. to retry a failed publish, without needing to
+                       # cut a brand new release
+
+jobs:
+  build:
+    name: Build distribution
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.x"
+      - name: Install build tool
+        run: pip install build
+      - name: Build sdist and wheel
+        run: python -m build
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: dist
+          path: dist/
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    # Must match the environment name you register in PyPI's trusted
+    # publisher config (step 3 below). If you leave the environment name
+    # blank on PyPI, remove this whole `environment:` block to match.
+    environment:
+      name: pypi
+      url: https://pypi.org/project/mdchunker/
+    permissions:
+      id-token: write  # required for OIDC trusted publishing -- no API
+                        # token or secret needed anywhere in this workflow
+    steps:
+      - name: Download build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: dist
+          path: dist/
+      - name: Publish to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1

@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "mdchunker"
-version = "0.1.0"
+version = "0.1.1"
 description = "Lightweight, structure-aware Markdown chunking for RAG systems."
 readme = "README.md"
 requires-python = ">=3.10"
