@@ -1,4 +1,4 @@
-# mdchunk
+# mdchunker
 
 Lightweight, structure-aware Markdown chunking for retrieval-augmented generation (RAG).
 
@@ -16,13 +16,13 @@ Lightweight, structure-aware Markdown chunking for retrieval-augmented generatio
 ## Installation
 
 ```bash
-pip install mdchunk
+pip install mdchunker
 ```
 
 ## Basic usage
 
 ```python
-from mdchunk import chunk_markdown
+from mdchunker import chunk_markdown
 
 chunks = chunk_markdown(markdown)
 
@@ -36,7 +36,7 @@ for chunk in chunks:
 The default metric is characters so the core package does not need a tokenizer.
 
 ```python
-from mdchunk import ChunkerConfig, chunk_markdown
+from mdchunker import ChunkerConfig, chunk_markdown
 
 config = ChunkerConfig(
     target_size=700,

@@ -39,7 +39,7 @@ jobs:
         run: mypy src
 
       - name: Test with coverage
-        run: pytest --cov=mdchunk --cov-report=term-missing
+        run: pytest --cov=mdchunker --cov-report=term-missing
 
   build:
     name: verify package builds

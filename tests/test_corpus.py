@@ -18,8 +18,8 @@ from pathlib import Path
 
 import pytest
 
-from mdchunk import ChunkerConfig, chunk_markdown
-from mdchunk.metrics import WordSizeMetric
+from mdchunker import ChunkerConfig, chunk_markdown
+from mdchunker.metrics import WordSizeMetric
 
 CORPUS_DIR = Path(__file__).parent / "corpus"
 CORPUS_FILES = sorted(CORPUS_DIR.glob("*.md"))

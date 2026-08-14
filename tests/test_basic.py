@@ -1,7 +1,7 @@
 import time
 
-from mdchunk import ChunkerConfig, chunk_markdown
-from mdchunk.metrics import WordSizeMetric
+from mdchunker import ChunkerConfig, chunk_markdown
+from mdchunker.metrics import WordSizeMetric
 
 # ---------------------------------------------------------------------------
 # Original tests
@@ -70,7 +70,7 @@ def test_sentence_splitter_does_not_crash():
 
 
 def test_sentence_splitter_protects_abbreviations_and_initials():
-    from mdchunk.chunker import MarkdownChunker
+    from mdchunker.chunker import MarkdownChunker
 
     mc = MarkdownChunker()
     assert mc._sentences("Dr. Smith went to Washington. He was tired.") == [

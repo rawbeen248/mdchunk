@@ -3,7 +3,7 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "mdchunk"
+name = "mdchunker"
 version = "0.1.0"
 description = "Lightweight, structure-aware Markdown chunking for RAG systems."
 readme = "README.md"
@@ -26,12 +26,12 @@ dev = [
 ]
 
 [project.urls]
-Homepage = "https://github.com/rawbeen248/mdchunk"
-Repository = "https://github.com/rawbeen248/mdchunk"
-Issues = "https://github.com/rawbeen248/mdchunk/issues"
+Homepage = "https://github.com/rawbeen248/mdchunker"
+Repository = "https://github.com/rawbeen248/mdchunker"
+Issues = "https://github.com/rawbeen248/mdchunker/issues"
 
 [tool.hatch.build.targets.wheel]
-packages = ["src/mdchunk"]
+packages = ["src/mdchunker"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

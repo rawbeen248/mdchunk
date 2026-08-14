@@ -1,4 +1,4 @@
-from mdchunk import chunk_markdown
+from mdchunker import chunk_markdown
 
 markdown = """
 # Authentication

@@ -1,4 +1,4 @@
-"""Public data models for mdchunk."""
+"""Public data models for mdchunker."""
 
 from __future__ import annotations
 
