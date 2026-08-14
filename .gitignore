@@ -30,3 +30,7 @@ coverage.xml
 
 # Environment-specific
 *.log
+
+# Internal planning docs, not published yet
+/PROJECT_GUIDE.md
+/CHANGELOG.md
